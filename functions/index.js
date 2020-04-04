@@ -42,10 +42,45 @@ app.get("/screams", (req, res) => {
     .catch((err) => console.error(err));
 });
 
-app.post("/scream", (req, res) => {
+const FNAuth = (req, res, next) => {
+  let idToken;
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer ")
+  ) {
+    idToken = req.headers.authorization.split("Bearer ")[1];
+  } else {
+    console.error("No token found");
+    return res.status(403).json({ error: "Unauthorized" });
+  }
+
+  admin
+    .auth()
+    .verifyIdToken(idToken)
+    .then((decodedToken) => {
+      req.user = decodedToken;
+      console.log(decodedToken);
+      return db
+        .collection("users")
+        .where("userId", "==", req.user.uid)
+        .limit(1)
+        .get();
+    })
+    .then((data) => {
+      req.user.handle = data.docs[0].data().handle;
+      return next();
+    })
+    .catch((err) => {
+      console.error("Error while verfying token", err);
+      return res.status(400).json(err);
+    });
+};
+
+// Post one scream
+app.post("/scream", FNAuth, (req, res) => {
   const newScream = {
     body: req.body.body,
-    userHandle: req.body.userHandle,
+    userHandle: req.body.handle,
     createdAt: new Date().toISOString(),
   };
 
@@ -137,6 +172,41 @@ app.post("/signup", (req, res) => {
         return res.status(400).json({ email: "Email is already in use" });
       }
       return res.status(500).json({ error: err.code });
+    });
+});
+
+// Signin route
+app.post("/login", (req, res) => {
+  const user = {
+    email: req.body.email,
+    password: req.body.password,
+  };
+
+  let errors = {};
+
+  if (isEmpty(user.email)) errors.email = "Must not be empty";
+  if (isEmpty(user.password)) errors.password = "Must not be empty";
+
+  if (Object.keys(errors).length > 0) return res.status(400).json(errors);
+
+  firebase
+    .auth()
+    .signInWithEmailAndPassword(user.email, user.password)
+    .then((data) => {
+      return data.user.getIdToken();
+    })
+    .then((token) => {
+      return res.json({ token });
+    })
+    .catch((err) => {
+      console.error(err);
+      if (err.code === "auth/wrong-password") {
+        return res
+          .status(401)
+          .json({ general: "Wrong password, please try again" });
+      } else {
+        return res.status(500).json({ error: err.code });
+      }
     });
 });
 
