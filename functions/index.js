@@ -1,18 +1,31 @@
 const functions = require("firebase-functions");
-const { getAllScreams, postOneScream } = require("./handlers/screams");
-const { signup, login, uploadImage } = require("./handlers/users");
+const {
+  getAllScreams,
+  postOneScream,
+  getScream,
+  commentOnScream,
+} = require("./handlers/screams");
+const {
+  signup,
+  login,
+  uploadImage,
+  addUserDetails,
+  getAthenticatedUser,
+} = require("./handlers/users");
 const FBAuth = require("./util/fbAuth");
-
 const app = require("express")();
 
 // Screams route
 app.get("/screams", getAllScreams);
-// Post one scream
 app.post("/scream", FBAuth, postOneScream);
-// signup route
+app.get("/scream/:screamId", getScream);
+app.post("/scream/:screamId/comment", FBAuth, commentOnScream);
+
+// User route
 app.post("/signup", signup);
-// Signin route
 app.post("/login", login);
 app.post("/user/image", FBAuth, uploadImage);
+app.post("/user", FBAuth, addUserDetails);
+app.get("/user", FBAuth, getAthenticatedUser);
 
 exports.api = functions.region("europe-west1").https.onRequest(app);

@@ -1,5 +1,9 @@
 const { admin, db } = require("../util/admin");
-const { validateSignupData, validateLoginData } = require("../util/validators");
+const {
+  validateSignupData,
+  validateLoginData,
+  reduceUserDetails,
+} = require("../util/validators");
 const firebaseConfig = require("../util/firebaseConfig");
 const firebase = require("firebase");
 firebase.initializeApp(firebaseConfig);
@@ -87,18 +91,63 @@ exports.login = (req, res) => {
     });
 };
 
+// add user details
+exports.addUserDetails = (req, res) => {
+  let userDetails = reduceUserDetails(req.body);
+
+  db.doc(`/users/${req.user.handle}`)
+    .update(userDetails)
+    .then(() => {
+      return res.json({ message: "Details added successfully" });
+    })
+    .catch((err) => {
+      console.error(err);
+      return res.status(500).json({ error: err.code });
+    });
+};
+
+// Get own user details
+exports.getAthenticatedUser = (req, res) => {
+  let userData = {};
+  db.doc(`/users/${req.user.handle}`)
+    .get()
+    .then((doc) => {
+      if (doc.exists) {
+        userData.credential = doc.data();
+        return db
+          .collection("likes")
+          .where("userHndle", "==", req.user.handle)
+          .get();
+      }
+    })
+    .then((data) => {
+      userData.likes = [];
+      data.forEach((doc) => {
+        userData.likes.push(doc.data());
+      });
+      return res.json(userData);
+    })
+    .catch((err) => {
+      console.error(err);
+      return res.status(500).json({ error: err.code });
+    });
+};
+
+// upload image profile for user
 exports.uploadImage = (req, res) => {
   const Busboy = require("busboy");
   const path = require("path");
   const os = require("os");
   const fs = require("fs");
 
+  console.log("aaa");
   const busboy = new Busboy({ headers: req.headers });
 
   let imageFileName;
   let imageToBeUploaded = {};
 
   busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
+    console.log("bbb");
     console.log(fieldname);
     console.log(filename);
     console.log(mimeType);
@@ -115,6 +164,7 @@ exports.uploadImage = (req, res) => {
     file.pipe(fs.createWriteStream(filepath));
   });
   busboy.on("finish", () => {
+    console.log("ccc");
     admin
       .storage()
       .bucket(firebaseConfig.storageBucket)
