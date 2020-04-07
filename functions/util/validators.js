@@ -15,13 +15,13 @@ const isEmpty = (string) => {
   }
 };
 
-exports.validateSignupData = data => {
+exports.validateSignupData = (data) => {
   let errors = {};
 
   if (isEmpty(data.email)) {
     errors.email = "Must not be empty!";
   } else if (!isEmail(data.email)) {
-    valid
+    valid;
     errors.email = "Must be a valid email address!";
   }
 
@@ -32,11 +32,11 @@ exports.validateSignupData = data => {
 
   return {
     errors,
-    valid: Object.keys(errors).length === 0 ? true : false
-  }
-}
+    valid: Object.keys(errors).length === 0 ? true : false,
+  };
+};
 
-exports.validateLoginData = data => {
+exports.validateLoginData = (data) => {
   let errors = {};
 
   if (isEmpty(data.email)) errors.email = "Must not be empty";
@@ -44,6 +44,6 @@ exports.validateLoginData = data => {
 
   return {
     errors,
-    valid: Object.keys(errors).length === 0 ? true : false
-  }
-}
+    valid: Object.keys(errors).length === 0 ? true : false,
+  };
+};

@@ -1,4 +1,4 @@
-const {db} = require('../util/admin.js')
+const { db } = require("../util/admin.js");
 
 exports.getAllScreams = (req, res) => {
   db.collection("screams")
@@ -6,6 +6,7 @@ exports.getAllScreams = (req, res) => {
     .get()
     .then((data) => {
       let screams = [];
+
       data.forEach((doc) => {
         screams.push({
           screamId: doc.id,
@@ -17,12 +18,12 @@ exports.getAllScreams = (req, res) => {
       return res.json(screams);
     })
     .catch((err) => console.error(err));
-}
+};
 
 exports.postOneScream = (req, res) => {
   const newScream = {
     body: req.body.body,
-    userHandle: req.body.handle,
+    userHandle: req.user.handle,
     createdAt: new Date().toISOString(),
   };
 
@@ -35,4 +36,4 @@ exports.postOneScream = (req, res) => {
       res.status(500).json({ error: "somthing went wrong" });
       console.error(err);
     });
-}
+};
