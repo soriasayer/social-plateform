@@ -1,4 +1,5 @@
 const functions = require("firebase-functions");
+const { db } = require("./util/admin");
 const {
   getAllScreams,
   postOneScream,
@@ -34,4 +35,73 @@ app.post("/user/image", FBAuth, uploadImage);
 app.post("/user", FBAuth, addUserDetails);
 app.get("/user", FBAuth, getAthenticatedUser);
 
-exports.api = functions.region("europe-west1").https.onRequest(app);
+exports.api = functions.region("europe-west3").https.onRequest(app);
+
+exports.createNotificatinOnLike = functions
+  .region("europe-west3")
+  .firestore.document("likes/{id}")
+  .onCreate((snap) => {
+    db.doc(`/screams/${snap.data().screamId}`)
+      .get()
+      .then((doc) => {
+        if (doc.exists) {
+          return db.doc(`/notifications/${snap.id}`).set({
+            screamId: doc.id,
+            recipient: doc.data().userHandle,
+            sender: snap.data().userHandle,
+            createdAt: new Date().toISOString(),
+            type: "like",
+            read: false,
+          });
+        }
+      })
+      .then(() => {
+        return;
+      })
+      .catch((err) => {
+        console.error(err);
+        return;
+      });
+  });
+
+exports.deletNotificatinOnUnLike = functions
+  .region("europe-west3")
+  .firestore.document("likes/{id}")
+  .onDelete((snap) => {
+    db.doc(`/notifications/${snap.id}`)
+      .delete()
+      .then(() => {
+        return;
+      })
+      .catch((err) => {
+        console.error(err);
+        return;
+      });
+  });
+
+exports.createNotificatinOnComment = functions
+  .region("europe-west3")
+  .firestore.document("comments/{id}")
+  .onCreate((snap) => {
+    db.doc(`/screams/${snap.data().screamId}`)
+      .get()
+      .then((doc) => {
+        if (doc.exists) {
+          return db.doc(`/notifications/${snap.id}`).set({
+            screamId: doc.id,
+            recipient: doc.data().userHandle,
+            sender: snap.data().userHandle,
+            createdAt: new Date().toISOString(),
+            type: "comment",
+            read: false,
+          });
+        }
+      })
+      .then(() => {
+        return;
+      })
+      .catch((err) => {
+        console.error(err);
+        return;
+      });
+  });
